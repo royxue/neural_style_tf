@@ -16,8 +16,10 @@ STYLE_LAYER_WEIGHT_EXP = 1
 ITERATIONS = 1001
 
 def _tensor_size(tensor):
-	from operator import mul
-	return reduce(mul, (d.value for d in tensor.get_shape()), 1)
+	size = 1
+	for d in tensor.get_shape():
+		size *= d.value
+	return size
 
 def ns_net(content, style):
 	img_shape = (300, 300)
@@ -28,6 +30,8 @@ def ns_net(content, style):
 	content = scipy.misc.imresize(content_image, img_shape)
 
 	style_image = scipy.misc.imread(style).astype(np.float)
+	if style_image.shape[2] == 4:
+		style_image = style_image[:,:,:3]
 	style = scipy.misc.imresize(style_image, img_shape)
 
 	shape = (1,) + content.shape
@@ -106,13 +110,13 @@ def ns_net(content, style):
 			style_loss += (style_layers_weights[style_layer] * 2 * tf.nn.l2_loss(gram - style_gram) / style_gram.size)
 		style_loss *= STYLE_WEIGHT
 
-		# tv_y_size = _tensor_size(image[:,1:,:,:])
-		# tv_x_size = _tensor_size(image[:,:,1:,:])
-		# tv_loss = TV_WEIGHT * 2 * (
-		# 	(tf.nn.l2_loss(image[:,1:,:,:] - image[:,:shape[1]-1,:,:]) /
-		# 		tv_y_size) +
-		# 	(tf.nn.l2_loss(image[:,:,1:,:] - image[:,:,:shape[2]-1,:]) /
-		# 		tv_x_size))
+		tv_y_size = _tensor_size(image[:,1:,:,:])
+		tv_x_size = _tensor_size(image[:,:,1:,:])
+		tv_loss = TV_WEIGHT * 2 * (
+			(tf.nn.l2_loss(image[:,1:,:,:] - image[:,:shape[1]-1,:,:]) /
+				tv_y_size) +
+			(tf.nn.l2_loss(image[:,:,1:,:] - image[:,:,:shape[2]-1,:]) /
+				tv_x_size))
 
 		# total loss
 		loss = content_loss + style_loss# + tv_loss
@@ -135,4 +139,4 @@ def ns_net(content, style):
 					mpimg.imsave('./test_%d.png'%(i), img_out)
 
 if __name__ == '__main__':
-	ns_net('./content.png', './starry.jpg')
+	ns_net('./content_1.png', './starry.jpg')
