@@ -13,12 +13,7 @@ STYLE_WEIGHT = 5e2
 TV_WEIGHT = 1e2
 CONTENT_LAYER_WEIGHT = 1
 STYLE_LAYER_WEIGHT_EXP = 1
-ITERATIONS = 101
-
-try:
-    reduce
-except NameError:
-    from functools import reduce
+ITERATIONS = 1001
 
 def _tensor_size(tensor):
 	from operator import mul
@@ -131,17 +126,13 @@ def ns_net(content, style):
 		with tf.Session() as sess:
 			sess.run(tf.global_variables_initializer())
 			for i in range(ITERATIONS):
+				train_step.run()
 				if(i%steps == 0 and i>0):
 					print(str(i)+"iterations done")
 					res = image.eval()
 					img_out = vgg.unprocess(res.reshape(shape[1:]), vgg_mean_pixel)
 					img_out = np.clip(img_out, 0, 255).astype(np.uint8)
 					mpimg.imsave('./test_%d.png'%(i), img_out)
-				train_step.run()
-
-			# res = image.eval()
-			# img_out = vgg.unprocess(res.reshape(shape[1:]), vgg_mean_pixel)
-			# mpimg.imsave('./test.png', img_out)
 
 if __name__ == '__main__':
 	ns_net('./content.png', './starry.jpg')
